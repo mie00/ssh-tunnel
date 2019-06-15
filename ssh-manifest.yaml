@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ssh
+  labels:
+    app: ssh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ssh
+  serviceName: ssh
+  template:
+    metadata:
+      labels:
+        app: ssh
+    spec:
+      containers:
+      - name: ssh
+        image: mie00/ssh-tunnel
+        ports:
+        - containerPort: 22
+        securityContext:
+          capabilities:
+            add:
+            - NET_ADMIN
+        volumeMounts:
+          - mountPath: /etc/ssh-back
+            name: ssh-vol
+      restartPolicy: Always
+      volumes:
+      - name: ssh-vol
+        persistentVolumeClaim:
+          claimName: ssh-vol
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ssh
+spec:
+  selector:
+    app: ssh
+  ports:
+  - protocol: TCP
+    port: 22
+    targetPort: 22
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ssh-vol
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
